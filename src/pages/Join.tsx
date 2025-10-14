@@ -12,6 +12,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { CheckCircle2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useState } from "react";
 
 const formSchema = z.object({
   firstName: z.string().min(1, "First name is required"),
@@ -33,19 +35,52 @@ const formSchema = z.object({
 type FormData = z.infer<typeof formSchema>;
 
 const Join = () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   const {
     register,
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors },
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
   });
 
-  const onSubmit = (data: FormData) => {
-    console.log("Form submitted:", data);
-    toast.success("Application submitted successfully! We'll be in touch soon.");
+  const onSubmit = async (data: FormData) => {
+    setIsSubmitting(true);
+    
+    try {
+      const { data: result, error } = await supabase.functions.invoke("send-membership-application", {
+        body: {
+          firstName: data.firstName,
+          lastName: data.lastName,
+          email: data.email,
+          phone: data.phone,
+          dob: data.dob,
+          address: data.address,
+          emergencyName: data.emergencyName,
+          emergencyPhone: data.emergencyPhone,
+          insuranceProvider: data.insuranceProvider,
+          policyNo: data.policyNo,
+          experience: data.experience,
+          medicalInfo: data.medicalInfo,
+        },
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      toast.success("Application submitted successfully! We'll be in touch soon.");
+      reset();
+    } catch (error) {
+      console.error("Error submitting application:", error);
+      toast.error("Failed to submit application. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -197,8 +232,8 @@ const Join = () => {
                       {errors.safetyAccepted && <p className="text-sm text-destructive">{errors.safetyAccepted.message}</p>}
                     </div>
 
-                    <Button type="submit" size="lg" className="w-full shadow-glow">
-                      Submit Application
+                    <Button type="submit" size="lg" className="w-full shadow-glow" disabled={isSubmitting}>
+                      {isSubmitting ? "Submitting..." : "Submit Application"}
                     </Button>
                   </form>
                 </CardContent>

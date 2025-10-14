@@ -1,1 +1,4 @@
 project_id = "miwjjgiqiuawhlavptlb"
+
+[functions.send-membership-application]
+verify_jwt = false
