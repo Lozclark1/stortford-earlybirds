@@ -9,6 +9,7 @@ import Members from "./pages/Members";
 import Events from "./pages/Events";
 import Join from "./pages/Join";
 import Auth from "./pages/Auth";
+import Profile from "./pages/Profile";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import SafeguardingPolicy from "./pages/SafeguardingPolicy";
 import ClubRules from "./pages/ClubRules";
@@ -28,6 +29,7 @@ const App = () => (
           <Route path="/" element={<Index />} />
           <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
           <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
+          <Route path="/profile" element={<ProtectedRoute><Profile /></ProtectedRoute>} />
           <Route path="/join" element={<Join />} />
           <Route path="/auth" element={<Auth />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />

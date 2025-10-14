@@ -89,6 +89,16 @@ const Navigation = () => {
                 >
                   Events
                 </Link>
+                <Link
+                  to="/profile"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname === "/profile"
+                      ? "text-primary"
+                      : "text-foreground/60"
+                  }`}
+                >
+                  Profile
+                </Link>
               </>
             )}
             
