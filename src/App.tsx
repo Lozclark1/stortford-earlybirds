@@ -8,11 +8,13 @@ import Index from "./pages/Index";
 import Members from "./pages/Members";
 import Events from "./pages/Events";
 import Join from "./pages/Join";
+import Auth from "./pages/Auth";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import SafeguardingPolicy from "./pages/SafeguardingPolicy";
 import ClubRules from "./pages/ClubRules";
 import CookiePolicy from "./pages/CookiePolicy";
 import NotFound from "./pages/NotFound";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -24,9 +26,10 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          <Route path="/members" element={<Members />} />
-          <Route path="/events" element={<Events />} />
+          <Route path="/members" element={<ProtectedRoute><Members /></ProtectedRoute>} />
+          <Route path="/events" element={<ProtectedRoute><Events /></ProtectedRoute>} />
           <Route path="/join" element={<Join />} />
+          <Route path="/auth" element={<Auth />} />
           <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           <Route path="/safeguarding-policy" element={<SafeguardingPolicy />} />
           <Route path="/club-rules" element={<ClubRules />} />

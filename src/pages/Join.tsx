@@ -16,23 +16,36 @@ import { supabase } from "@/integrations/supabase/client";
 import { useState } from "react";
 
 const formSchema = z.object({
-  firstName: z.string().min(1, "First name is required"),
-  lastName: z.string().min(1, "Last name is required"),
-  email: z.string().email("Valid email is required"),
-  phone: z.string().min(1, "Phone number is required"),
+  firstName: z.string().trim().min(1, "First name is required").max(100),
+  lastName: z.string().trim().min(1, "Last name is required").max(100),
+  email: z.string().trim().email("Valid email is required").max(255),
+  phone: z.string().trim().min(1, "Phone number is required").max(20),
   dob: z.string().min(1, "Date of birth is required"),
-  address: z.string().min(1, "Address is required"),
-  emergencyName: z.string().min(1, "Emergency contact name is required"),
-  emergencyPhone: z.string().min(1, "Emergency contact phone is required"),
-  insuranceProvider: z.string().min(1, "Insurance provider is required"),
-  policyNo: z.string().min(1, "Policy number is required"),
+  addressLine1: z.string().trim().min(1, "Address line 1 is required").max(200),
+  addressLine2: z.string().trim().max(200).optional(),
+  city: z.string().trim().min(1, "City is required").max(100),
+  postcode: z.string().trim().min(1, "Postcode is required").max(10),
+  emergencyName: z.string().trim().min(1, "Emergency contact name is required").max(100),
+  emergencyPhone: z.string().trim().min(1, "Emergency contact phone is required").max(20),
+  insuranceProvider: z.string().trim().min(1, "Insurance provider is required").max(100),
+  policyNo: z.string().trim().min(1, "Policy number is required").max(100),
   experience: z.string().min(1, "Please select your experience level"),
-  medicalInfo: z.string().optional(),
+  medicalInfo: z.string().trim().max(1000).optional(),
   termsAccepted: z.boolean().refine((val) => val === true, "You must accept the terms"),
   safetyAccepted: z.boolean().refine((val) => val === true, "You must acknowledge the safety guidelines"),
 });
 
 type FormData = z.infer<typeof formSchema>;
+
+// Generate a random 8-character password
+const generatePassword = () => {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789';
+  let password = '';
+  for (let i = 0; i < 8; i++) {
+    password += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return password;
+};
 
 const Join = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -52,32 +65,96 @@ const Join = () => {
     setIsSubmitting(true);
     
     try {
-      const { data: result, error } = await supabase.functions.invoke("send-membership-application", {
-        body: {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          phone: data.phone,
-          dob: data.dob,
-          address: data.address,
-          emergencyName: data.emergencyName,
-          emergencyPhone: data.emergencyPhone,
-          insuranceProvider: data.insuranceProvider,
-          policyNo: data.policyNo,
-          experience: data.experience,
-          medicalInfo: data.medicalInfo,
-        },
+      // Generate a random password
+      const tempPassword = generatePassword();
+      const fullName = `${data.firstName} ${data.lastName}`;
+
+      // Create user account
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: data.email,
+        password: tempPassword,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+          data: {
+            full_name: fullName,
+          }
+        }
       });
 
-      if (error) {
-        throw error;
+      if (authError) {
+        if (authError.message.includes("User already registered")) {
+          toast.error("An account with this email already exists.");
+        } else {
+          throw authError;
+        }
+        return;
       }
 
-      toast.success("Application submitted successfully! We'll be in touch soon.");
+      if (!authData.user) {
+        throw new Error("Failed to create user account");
+      }
+
+      // Store profile data
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: authData.user.id,
+          email: data.email,
+          full_name: fullName,
+          date_of_birth: data.dob,
+          phone_number: data.phone,
+          address_line1: data.addressLine1,
+          address_line2: data.addressLine2 || null,
+          city: data.city,
+          postcode: data.postcode,
+          emergency_contact_name: data.emergencyName,
+          emergency_contact_phone: data.emergencyPhone,
+          insurance_company: data.insuranceProvider,
+          insurance_policy_number: data.policyNo,
+          cycling_experience: data.experience,
+          medical_conditions: data.medicalInfo || null,
+          terms_accepted: data.termsAccepted,
+          safety_acknowledgment_accepted: data.safetyAccepted,
+        });
+
+      if (profileError) {
+        console.error("Profile creation error:", profileError);
+        throw new Error("Failed to save profile data");
+      }
+
+      // Assign member role
+      const { error: roleError } = await supabase
+        .from('user_roles')
+        .insert({
+          user_id: authData.user.id,
+          role: 'member'
+        });
+
+      if (roleError) {
+        console.error("Role assignment error:", roleError);
+        throw new Error("Failed to assign member role");
+      }
+
+      // Send welcome email with password
+      const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
+        body: {
+          email: data.email,
+          fullName: fullName,
+          password: tempPassword,
+        }
+      });
+
+      if (emailError) {
+        console.error("Email sending error:", emailError);
+        toast.warning("Account created but failed to send welcome email. Please contact support.");
+      } else {
+        toast.success("Account created successfully! Check your email for login details.");
+      }
+
       reset();
-    } catch (error) {
+    } catch (error: any) {
       console.error("Error submitting application:", error);
-      toast.error("Failed to submit application. Please try again.");
+      toast.error(error.message || "Failed to submit application. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -121,7 +198,7 @@ const Join = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="email">Email Address *</Label>
+                        <Label htmlFor="email">Email Address (will be your username) *</Label>
                         <Input id="email" type="email" {...register("email")} />
                         {errors.email && <p className="text-sm text-destructive">{errors.email.message}</p>}
                       </div>
@@ -138,9 +215,25 @@ const Join = () => {
                         </div>
                       </div>
                       <div className="space-y-2">
-                        <Label htmlFor="address">Address *</Label>
-                        <Textarea id="address" {...register("address")} />
-                        {errors.address && <p className="text-sm text-destructive">{errors.address.message}</p>}
+                        <Label htmlFor="addressLine1">Address Line 1 *</Label>
+                        <Input id="addressLine1" {...register("addressLine1")} />
+                        {errors.addressLine1 && <p className="text-sm text-destructive">{errors.addressLine1.message}</p>}
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="addressLine2">Address Line 2</Label>
+                        <Input id="addressLine2" {...register("addressLine2")} />
+                      </div>
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="city">City *</Label>
+                          <Input id="city" {...register("city")} />
+                          {errors.city && <p className="text-sm text-destructive">{errors.city.message}</p>}
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="postcode">Postcode *</Label>
+                          <Input id="postcode" {...register("postcode")} />
+                          {errors.postcode && <p className="text-sm text-destructive">{errors.postcode.message}</p>}
+                        </div>
                       </div>
                     </div>
 
@@ -249,8 +342,8 @@ const Join = () => {
                     </div>
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-muted-foreground">Step 1</p>
-                      <h3 className="text-xl font-bold">Application accepted</h3>
-                      <p className="text-muted-foreground">Your application will be reviewed and accepted</p>
+                      <h3 className="text-xl font-bold">Account created</h3>
+                      <p className="text-muted-foreground">You'll receive an email with your login credentials</p>
                     </div>
                   </div>
                   

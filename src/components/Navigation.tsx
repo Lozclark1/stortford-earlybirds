@@ -1,9 +1,41 @@
-import { Bike } from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Bike, LogOut } from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { useEffect, useState } from "react";
+import { User } from "@supabase/supabase-js";
+import { toast } from "sonner";
 
 const Navigation = () => {
   const location = useLocation();
+  const navigate = useNavigate();
+  const [user, setUser] = useState<User | null>(null);
+  
+  useEffect(() => {
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (event, session) => {
+        setUser(session?.user ?? null);
+      }
+    );
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    const { error } = await supabase.auth.signOut();
+    if (error) {
+      toast.error("Error logging out");
+    } else {
+      toast.success("Logged out successfully");
+      navigate("/");
+    }
+  };
   
   const navLinks = [
     { name: "Home", path: "/" },
@@ -37,9 +69,25 @@ const Navigation = () => {
                 {link.name}
               </Link>
             ))}
-            <Button asChild variant="default" className="shadow-glow">
-              <Link to="/join">Join Group</Link>
-            </Button>
+            {user ? (
+              <Button 
+                onClick={handleLogout}
+                variant="outline" 
+                className="flex items-center gap-2"
+              >
+                <LogOut className="h-4 w-4" />
+                Logout
+              </Button>
+            ) : (
+              <>
+                <Button asChild variant="outline">
+                  <Link to="/auth">Login</Link>
+                </Button>
+                <Button asChild variant="default" className="shadow-glow">
+                  <Link to="/join">Join Group</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </div>
