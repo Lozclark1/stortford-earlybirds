@@ -52,8 +52,29 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="border-t border-background/20 pt-8 text-center text-background/60">
-          <p>&copy; {new Date().getFullYear()} Stortford Early Birds. All rights reserved.</p>
+        <div className="border-t border-background/20 pt-8">
+          <div className="flex flex-wrap justify-center gap-4 mb-4 text-sm">
+            <a href="mailto:stortfordearlybirds@gmail.com" className="text-background/80 hover:text-background transition-colors">
+              Contact Us
+            </a>
+            <span className="text-background/40">•</span>
+            <Link to="/privacy-policy" className="text-background/80 hover:text-background transition-colors">
+              Privacy Policy
+            </Link>
+            <span className="text-background/40">•</span>
+            <Link to="/safeguarding-policy" className="text-background/80 hover:text-background transition-colors">
+              Safeguarding Policy
+            </Link>
+            <span className="text-background/40">•</span>
+            <Link to="/club-rules" className="text-background/80 hover:text-background transition-colors">
+              Club Rules & Etiquette
+            </Link>
+            <span className="text-background/40">•</span>
+            <Link to="/cookie-policy" className="text-background/80 hover:text-background transition-colors">
+              Cookie Policy
+            </Link>
+          </div>
+          <p className="text-center text-background/60">&copy; {new Date().getFullYear()} Stortford Early Birds. All rights reserved.</p>
         </div>
       </div>
     </footer>
