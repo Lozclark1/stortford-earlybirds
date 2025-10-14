@@ -42,7 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
     };
 
     const emailResponse = await resend.emails.send({
-      from: "SEB Membership <onboarding@resend.dev>",
+      from: "SEB Membership <membership@stortfordearlybirds.co.uk>",
       to: ["stortfordearlybirds@gmail.com"],
       replyTo: application.email,
       subject: `New Membership Application - ${application.firstName} ${application.lastName}`,
