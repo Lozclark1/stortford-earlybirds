@@ -56,19 +56,42 @@ const Navigation = () => {
           </Link>
           
           <div className="hidden md:flex items-center gap-6">
-            {navLinks.slice(0, 3).map((link) => (
-              <Link
-                key={link.path}
-                to={link.path}
-                className={`text-sm font-medium transition-colors hover:text-primary ${
-                  location.pathname === link.path
-                    ? "text-primary"
-                    : "text-foreground/60"
-                }`}
-              >
-                {link.name}
-              </Link>
-            ))}
+            <Link
+              to="/"
+              className={`text-sm font-medium transition-colors hover:text-primary ${
+                location.pathname === "/"
+                  ? "text-primary"
+                  : "text-foreground/60"
+              }`}
+            >
+              Home
+            </Link>
+            
+            {user && (
+              <>
+                <Link
+                  to="/members"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname === "/members"
+                      ? "text-primary"
+                      : "text-foreground/60"
+                  }`}
+                >
+                  Gallery
+                </Link>
+                <Link
+                  to="/events"
+                  className={`text-sm font-medium transition-colors hover:text-primary ${
+                    location.pathname === "/events"
+                      ? "text-primary"
+                      : "text-foreground/60"
+                  }`}
+                >
+                  Events
+                </Link>
+              </>
+            )}
+            
             {user ? (
               <Button 
                 onClick={handleLogout}
