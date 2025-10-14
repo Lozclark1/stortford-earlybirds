@@ -8,6 +8,7 @@ import Index from "./pages/Index";
 import Members from "./pages/Members";
 import Events from "./pages/Events";
 import Join from "./pages/Join";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -23,6 +24,7 @@ const App = () => (
           <Route path="/members" element={<Members />} />
           <Route path="/events" element={<Events />} />
           <Route path="/join" element={<Join />} />
+          <Route path="/privacy-policy" element={<PrivacyPolicy />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="*" element={<NotFound />} />
         </Routes>
