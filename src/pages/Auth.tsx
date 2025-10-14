@@ -158,11 +158,11 @@ const Auth = () => {
             ) : (
               <form onSubmit={handleVerifyOTP} className="space-y-4">
                 <div>
-                  <Label htmlFor="otp">Verification Code</Label>
+                  <Label htmlFor="otp">Enter code</Label>
                   <Input
                     id="otp"
                     type="text"
-                    placeholder="Enter 6-digit code"
+                    placeholder="Enter code"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
                     required
@@ -171,7 +171,7 @@ const Auth = () => {
                     maxLength={6}
                   />
                   <p className="text-xs text-muted-foreground mt-2">
-                    Check your email for the 6-digit verification code
+                    Check your email for the verification code
                   </p>
                 </div>
 
