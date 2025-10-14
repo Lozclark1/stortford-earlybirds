@@ -6,13 +6,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import Navigation from "@/components/Navigation";
-import { Bike } from "lucide-react";
+import { Bike, Mail, Shield } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [otpSent, setOtpSent] = useState(false);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -25,22 +26,46 @@ const Auth = () => {
     checkUser();
   }, [navigate]);
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithOtp({
         email: email.trim(),
-        password,
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        }
       });
 
       if (error) {
-        if (error.message.includes("Invalid login credentials")) {
-          toast.error("Invalid email or password. Please check your credentials.");
-        } else {
-          toast.error(error.message);
-        }
+        toast.error(error.message);
+        return;
+      }
+
+      setOtpSent(true);
+      toast.success("Check your email for the verification code!");
+    } catch (error: any) {
+      console.error("Send OTP error:", error);
+      toast.error("An error occurred. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoading(true);
+
+    try {
+      const { data, error } = await supabase.auth.verifyOtp({
+        email: email.trim(),
+        token: otp.trim(),
+        type: 'email'
+      });
+
+      if (error) {
+        toast.error("Invalid or expired code. Please try again.");
         return;
       }
 
@@ -49,8 +74,32 @@ const Auth = () => {
         navigate("/");
       }
     } catch (error: any) {
-      console.error("Login error:", error);
-      toast.error("An error occurred during login. Please try again.");
+      console.error("Verify OTP error:", error);
+      toast.error("An error occurred during verification. Please try again.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResendCode = async () => {
+    setIsLoading(true);
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: {
+          emailRedirectTo: `${window.location.origin}/`,
+        }
+      });
+
+      if (error) {
+        toast.error(error.message);
+        return;
+      }
+
+      toast.success("New code sent to your email!");
+    } catch (error: any) {
+      console.error("Resend OTP error:", error);
+      toast.error("Failed to resend code. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -64,50 +113,102 @@ const Auth = () => {
         <div className="max-w-md mx-auto">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-4">
-              <Bike className="h-16 w-16 text-primary" />
+              <div className="relative">
+                <Bike className="h-16 w-16 text-primary" />
+                <Shield className="h-6 w-6 text-primary absolute -bottom-1 -right-1 bg-background rounded-full p-1" />
+              </div>
             </div>
             <h1 className="text-3xl font-bold mb-2">Member Login</h1>
             <p className="text-muted-foreground">
-              Sign in to access member features
+              {otpSent ? "Enter the code from your email" : "Sign in with a verification code"}
             </p>
           </div>
 
           <div className="bg-card border rounded-lg p-6 shadow-lg">
-            <form onSubmit={handleLogin} className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="your.email@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
+            {!otpSent ? (
+              <form onSubmit={handleSendOTP} className="space-y-4">
+                <div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="email"
+                      type="email"
+                      placeholder="your.email@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                      disabled={isLoading}
+                      className="pl-10"
+                    />
+                  </div>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    We'll send you a secure code to verify your identity
+                  </p>
+                </div>
 
-              <div>
-                <Label htmlFor="password">Password</Label>
-                <Input
-                  id="password"
-                  type="password"
-                  placeholder="Enter your password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  required
+                <Button
+                  type="submit"
+                  className="w-full"
                   disabled={isLoading}
-                />
-              </div>
+                >
+                  {isLoading ? "Sending code..." : "Send Verification Code"}
+                </Button>
+              </form>
+            ) : (
+              <form onSubmit={handleVerifyOTP} className="space-y-4">
+                <div>
+                  <Label htmlFor="otp">Verification Code</Label>
+                  <Input
+                    id="otp"
+                    type="text"
+                    placeholder="Enter 6-digit code"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    required
+                    disabled={isLoading}
+                    className="text-center text-2xl tracking-widest font-mono"
+                    maxLength={6}
+                  />
+                  <p className="text-xs text-muted-foreground mt-2">
+                    Check your email for the 6-digit verification code
+                  </p>
+                </div>
 
-              <Button
-                type="submit"
-                className="w-full"
-                disabled={isLoading}
-              >
-                {isLoading ? "Signing in..." : "Sign In"}
-              </Button>
-            </form>
+                <Button
+                  type="submit"
+                  className="w-full"
+                  disabled={isLoading || otp.length !== 6}
+                >
+                  {isLoading ? "Verifying..." : "Verify & Sign In"}
+                </Button>
+
+                <div className="space-y-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-full"
+                    onClick={handleResendCode}
+                    disabled={isLoading}
+                  >
+                    Resend Code
+                  </Button>
+                  
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full"
+                    onClick={() => {
+                      setOtpSent(false);
+                      setOtp("");
+                    }}
+                    disabled={isLoading}
+                  >
+                    Change Email
+                  </Button>
+                </div>
+              </form>
+            )}
 
             <div className="mt-6 pt-6 border-t text-center">
               <p className="text-sm text-muted-foreground mb-2">
@@ -121,6 +222,11 @@ const Auth = () => {
                 Join Our Group
               </Button>
             </div>
+          </div>
+
+          <div className="mt-6 text-center text-xs text-muted-foreground">
+            <Shield className="h-4 w-4 inline mr-1" />
+            Secure passwordless authentication
           </div>
         </div>
       </div>

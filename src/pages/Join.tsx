@@ -65,14 +65,12 @@ const Join = () => {
     setIsSubmitting(true);
     
     try {
-      // Generate a random password
-      const tempPassword = generatePassword();
       const fullName = `${data.firstName} ${data.lastName}`;
 
-      // Create user account
+      // Create user account with OTP (no password needed)
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: data.email,
-        password: tempPassword,
+        password: generatePassword(), // Temporary, will use OTP for login
         options: {
           emailRedirectTo: `${window.location.origin}/`,
           data: {
@@ -135,22 +133,7 @@ const Join = () => {
         throw new Error("Failed to assign member role");
       }
 
-      // Send welcome email with password
-      const { error: emailError } = await supabase.functions.invoke('send-welcome-email', {
-        body: {
-          email: data.email,
-          fullName: fullName,
-          password: tempPassword,
-        }
-      });
-
-      if (emailError) {
-        console.error("Email sending error:", emailError);
-        toast.warning("Account created but failed to send welcome email. Please contact support.");
-      } else {
-        toast.success("Account created successfully! Check your email for login details.");
-      }
-
+      toast.success("Account created successfully! Use the login page to sign in with a verification code.");
       reset();
     } catch (error: any) {
       console.error("Error submitting application:", error);
@@ -343,7 +326,7 @@ const Join = () => {
                     <div className="space-y-2">
                       <p className="text-sm font-semibold text-muted-foreground">Step 1</p>
                       <h3 className="text-xl font-bold">Account created</h3>
-                      <p className="text-muted-foreground">You'll receive an email with your login credentials</p>
+                      <p className="text-muted-foreground">Sign in anytime using a verification code sent to your email</p>
                     </div>
                   </div>
                   
