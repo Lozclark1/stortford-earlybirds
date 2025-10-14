@@ -41,15 +41,108 @@ export type Database = {
         }
         Relationships: []
       }
+      profiles: {
+        Row: {
+          address_line1: string
+          address_line2: string | null
+          city: string
+          created_at: string | null
+          cycling_experience: string
+          date_of_birth: string
+          email: string
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          full_name: string
+          id: string
+          insurance_company: string
+          insurance_policy_number: string
+          medical_conditions: string | null
+          phone_number: string
+          postcode: string
+          safety_acknowledgment_accepted: boolean
+          terms_accepted: boolean
+          updated_at: string | null
+        }
+        Insert: {
+          address_line1: string
+          address_line2?: string | null
+          city: string
+          created_at?: string | null
+          cycling_experience: string
+          date_of_birth: string
+          email: string
+          emergency_contact_name: string
+          emergency_contact_phone: string
+          full_name: string
+          id: string
+          insurance_company: string
+          insurance_policy_number: string
+          medical_conditions?: string | null
+          phone_number: string
+          postcode: string
+          safety_acknowledgment_accepted?: boolean
+          terms_accepted?: boolean
+          updated_at?: string | null
+        }
+        Update: {
+          address_line1?: string
+          address_line2?: string | null
+          city?: string
+          created_at?: string | null
+          cycling_experience?: string
+          date_of_birth?: string
+          email?: string
+          emergency_contact_name?: string
+          emergency_contact_phone?: string
+          full_name?: string
+          id?: string
+          insurance_company?: string
+          insurance_policy_number?: string
+          medical_conditions?: string | null
+          phone_number?: string
+          postcode?: string
+          safety_acknowledgment_accepted?: boolean
+          terms_accepted?: boolean
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          created_at: string | null
+          id: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          role: Database["public"]["Enums"]["app_role"]
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          role?: Database["public"]["Enums"]["app_role"]
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      has_role: {
+        Args: {
+          _role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
-      [_ in never]: never
+      app_role: "admin" | "member"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -176,6 +269,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["admin", "member"],
+    },
   },
 } as const
