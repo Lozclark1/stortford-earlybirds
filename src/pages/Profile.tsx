@@ -48,14 +48,14 @@ const Profile = () => {
         .from("profiles")
         .select("*")
         .eq("id", user.id)
-        .single();
+        .maybeSingle();
 
       if (error) throw error;
 
       if (data) {
         setProfile({
           full_name: data.full_name || "",
-          email: data.email || "",
+          email: data.email || user.email || "",
           phone_number: data.phone_number || "",
           date_of_birth: data.date_of_birth || "",
           address_line1: data.address_line1 || "",
@@ -69,6 +69,12 @@ const Profile = () => {
           cycling_experience: data.cycling_experience || "",
           medical_conditions: data.medical_conditions || "",
         });
+      } else {
+        // No profile exists yet, set email from auth user
+        setProfile(prev => ({
+          ...prev,
+          email: user.email || "",
+        }));
       }
     } catch (error: any) {
       toast({
@@ -91,8 +97,10 @@ const Profile = () => {
 
       const { error } = await supabase
         .from("profiles")
-        .update({
+        .upsert({
+          id: user.id,
           full_name: profile.full_name,
+          email: user.email || profile.email,
           phone_number: profile.phone_number,
           date_of_birth: profile.date_of_birth,
           address_line1: profile.address_line1,
@@ -105,18 +113,19 @@ const Profile = () => {
           insurance_policy_number: profile.insurance_policy_number,
           cycling_experience: profile.cycling_experience,
           medical_conditions: profile.medical_conditions,
-        })
-        .eq("id", user.id);
+          terms_accepted: true,
+          safety_acknowledgment_accepted: true,
+        });
 
       if (error) throw error;
 
       toast({
-        title: "Profile updated",
+        title: "Profile saved",
         description: "Your details have been saved successfully.",
       });
     } catch (error: any) {
       toast({
-        title: "Error updating profile",
+        title: "Error saving profile",
         description: error.message,
         variant: "destructive",
       });
