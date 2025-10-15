@@ -10,17 +10,20 @@ const Navigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
   
   useEffect(() => {
-    // Check for existing session
+    // Check for existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
+      setLoading(false);
     });
 
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       (event, session) => {
         setUser(session?.user ?? null);
+        setLoading(false);
       }
     );
 
@@ -67,7 +70,7 @@ const Navigation = () => {
               Home
             </Link>
             
-            {user && (
+            {!loading && user && (
               <>
                 <Link
                   to="/members"
@@ -77,7 +80,7 @@ const Navigation = () => {
                       : "text-foreground/60"
                   }`}
                 >
-                  Gallery
+                  Members
                 </Link>
                 <Link
                   to="/events"
@@ -97,12 +100,12 @@ const Navigation = () => {
                       : "text-foreground/60"
                   }`}
                 >
-                  Profile
+                  My Profile
                 </Link>
               </>
             )}
             
-            {user ? (
+            {!loading && (user ? (
               <Button 
                 onClick={handleLogout}
                 variant="outline" 
@@ -120,7 +123,7 @@ const Navigation = () => {
                   <Link to="/join">Join Group</Link>
                 </Button>
               </>
-            )}
+            ))}
           </div>
         </div>
       </div>
