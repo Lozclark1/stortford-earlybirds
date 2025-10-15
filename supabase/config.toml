@@ -1,4 +1,7 @@
 project_id = "miwjjgiqiuawhlavptlb"
 
+[functions.send-otp-email]
+verify_jwt = false
+
 [functions.send-membership-application]
 verify_jwt = true
