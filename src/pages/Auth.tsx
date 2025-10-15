@@ -20,7 +20,7 @@ const Auth = () => {
     const checkUser = async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (session) {
-        navigate("/");
+        navigate("/members");
       }
     };
     checkUser();
@@ -71,7 +71,7 @@ const Auth = () => {
 
       if (data.session) {
         toast.success("Welcome back!");
-        navigate("/");
+        navigate("/members");
       }
     } catch (error: any) {
       console.error("Verify OTP error:", error);
