@@ -11,12 +11,20 @@ const Navigation = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   useEffect(() => {
     // Check for existing session first
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       setLoading(false);
+      
+      // Check admin role after setting user
+      if (session?.user) {
+        setTimeout(() => {
+          checkAdminRole(session.user.id);
+        }, 0);
+      }
     });
 
     // Listen for auth changes
@@ -24,11 +32,35 @@ const Navigation = () => {
       (event, session) => {
         setUser(session?.user ?? null);
         setLoading(false);
+        
+        // Check admin role when auth state changes
+        if (session?.user) {
+          setTimeout(() => {
+            checkAdminRole(session.user.id);
+          }, 0);
+        } else {
+          setIsAdmin(false);
+        }
       }
     );
 
     return () => subscription.unsubscribe();
   }, []);
+
+  const checkAdminRole = async (userId: string) => {
+    try {
+      const { data } = await supabase
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", userId)
+        .eq("role", "admin");
+      
+      setIsAdmin(!!data && data.length > 0);
+    } catch (error) {
+      console.error("Error checking admin role:", error);
+      setIsAdmin(false);
+    }
+  };
 
   const handleLogout = async () => {
     const { error } = await supabase.auth.signOut();
@@ -102,6 +134,18 @@ const Navigation = () => {
                 >
                   My Profile
                 </Link>
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className={`text-sm font-medium transition-colors hover:text-primary ${
+                      location.pathname === "/admin"
+                        ? "text-primary"
+                        : "text-foreground/60"
+                    }`}
+                  >
+                    Admin
+                  </Link>
+                )}
               </>
             )}
             
