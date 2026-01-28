@@ -14,6 +14,31 @@ const Auth = () => {
   const [otp, setOtp] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [cooldownSeconds, setCooldownSeconds] = useState(0);
+
+  const extractCooldownSeconds = (message?: string) => {
+    if (!message) return null;
+    const match = message.match(/after\s+(\d+)\s+seconds?/i);
+    if (!match?.[1]) return null;
+    const seconds = Number(match[1]);
+    return Number.isFinite(seconds) && seconds > 0 ? seconds : null;
+  };
+
+  const handleOtpRateLimit = (message?: string) => {
+    const seconds = extractCooldownSeconds(message);
+    if (!seconds) return false;
+    setCooldownSeconds(seconds);
+    toast.error(`Please wait ${seconds}s before requesting another code.`);
+    return true;
+  };
+
+  useEffect(() => {
+    if (cooldownSeconds <= 0) return;
+    const t = window.setInterval(() => {
+      setCooldownSeconds((s) => Math.max(0, s - 1));
+    }, 1000);
+    return () => window.clearInterval(t);
+  }, [cooldownSeconds]);
 
   useEffect(() => {
     // Check if user is already logged in
@@ -28,6 +53,12 @@ const Auth = () => {
 
   const handleSendOTP = async (e: React.FormEvent) => {
     e.preventDefault();
+
+    if (cooldownSeconds > 0) {
+      toast.error(`Please wait ${cooldownSeconds}s before requesting another code.`);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -39,7 +70,9 @@ const Auth = () => {
       });
 
       if (error) {
-        toast.error(error.message);
+        if (!handleOtpRateLimit(error.message)) {
+          toast.error(error.message);
+        }
         return;
       }
 
@@ -82,6 +115,11 @@ const Auth = () => {
   };
 
   const handleResendCode = async () => {
+    if (cooldownSeconds > 0) {
+      toast.error(`Please wait ${cooldownSeconds}s before requesting another code.`);
+      return;
+    }
+
     setIsLoading(true);
     try {
       const { error } = await supabase.auth.signInWithOtp({
@@ -92,7 +130,9 @@ const Auth = () => {
       });
 
       if (error) {
-        toast.error(error.message);
+        if (!handleOtpRateLimit(error.message)) {
+          toast.error(error.message);
+        }
         return;
       }
 
@@ -145,14 +185,21 @@ const Auth = () => {
                   <p className="text-xs text-muted-foreground mt-2">
                     We'll send you a secure code to verify your identity
                   </p>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    If you don't receive it within 1–2 minutes, check your spam/junk folder.
+                  </p>
                 </div>
 
                 <Button
                   type="submit"
                   className="w-full"
-                  disabled={isLoading}
+                  disabled={isLoading || cooldownSeconds > 0}
                 >
-                  {isLoading ? "Sending code..." : "Send Verification Code"}
+                  {isLoading
+                    ? "Sending code..."
+                    : cooldownSeconds > 0
+                      ? `Try again in ${cooldownSeconds}s`
+                      : "Send Verification Code"}
                 </Button>
               </form>
             ) : (
@@ -189,9 +236,9 @@ const Auth = () => {
                     variant="outline"
                     className="w-full"
                     onClick={handleResendCode}
-                    disabled={isLoading}
+                    disabled={isLoading || cooldownSeconds > 0}
                   >
-                    Resend Code
+                    {cooldownSeconds > 0 ? `Resend in ${cooldownSeconds}s` : "Resend Code"}
                   </Button>
                   
                   <Button
