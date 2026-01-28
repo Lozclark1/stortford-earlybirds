@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Camera, Heart, Image as ImageIcon, MessageSquare, Upload, Users } from "lucide-react";
+import { Camera, Heart, Image as ImageIcon, MessageSquare, Upload, Users, Trash2 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { format } from "date-fns";
@@ -22,12 +22,27 @@ const Members = () => {
     totalComments: 0,
   });
   const [uploading, setUploading] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchPhotos();
     fetchStats();
+    checkAdminStatus();
   }, []);
+
+  const checkAdminStatus = async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return;
+    
+    const { data } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id)
+      .eq("role", "admin");
+    
+    setIsAdmin(data && data.length > 0);
+  };
 
   const fetchPhotos = async () => {
     const { data, error } = await supabase
@@ -141,6 +156,31 @@ const Members = () => {
     if (error) {
       console.error("Error updating likes:", error);
     } else {
+      fetchPhotos();
+      fetchStats();
+    }
+  };
+
+  const handleDelete = async (photoId: string) => {
+    if (!confirm("Are you sure you want to delete this photo?")) return;
+    
+    const { error } = await supabase
+      .from("member_photos")
+      .delete()
+      .eq("id", photoId);
+
+    if (error) {
+      console.error("Error deleting photo:", error);
+      toast({
+        title: "Delete failed",
+        description: "Could not delete the photo",
+        variant: "destructive",
+      });
+    } else {
+      toast({
+        title: "Photo deleted",
+        description: "The photo has been removed from the gallery",
+      });
       fetchPhotos();
       fetchStats();
     }
@@ -278,15 +318,27 @@ const Members = () => {
                         <p>by {photo.member_name}</p>
                         <p>{format(new Date(photo.created_at), "M/d/yyyy")}</p>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleLike(photo.id, photo.likes)}
-                        className="flex items-center gap-1"
-                      >
-                        <Heart className="h-4 w-4" />
-                        {photo.likes}
-                      </Button>
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleLike(photo.id, photo.likes)}
+                          className="flex items-center gap-1"
+                        >
+                          <Heart className="h-4 w-4" />
+                          {photo.likes}
+                        </Button>
+                        {isAdmin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => handleDelete(photo.id)}
+                            className="text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
